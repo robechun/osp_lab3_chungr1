@@ -79,11 +79,9 @@ void startShell()
 			fprintf(stderr, "Unable to read from stdin.\n");
 		}
 		
-		// TODO: segmentation fault in either remove or getCommand
 		// Handle whitespace before going through 
 		line_wsPre_rm = removePreWhiteSpace(line, lineLen);
 		command = getCommand(line_wsPre_rm);
-		printf("command is:%d%ssyo\n",10, command);
 		// TODO: maybe free (line) here?
 
 		if (!strcmp(command, "exit"))
@@ -104,6 +102,7 @@ void startShell()
 			printf("STILL TO BE IMPLEMENTED\n");
 		}
 			
+
 
 
 
@@ -194,6 +193,6 @@ void getPwd()
 	}
 	else
 	{
-		printf("%s",cwd);
+		printf("%s\n",cwd);
 	}
 }	
