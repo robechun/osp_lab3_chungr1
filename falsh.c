@@ -6,7 +6,8 @@
 void handleHelp(int, char *argv[]);
 void startShell();
 void helpMessage();
-char *removePreWhiteSpace(char*, ssize_t);
+char* removePreWhiteSpace(char*, ssize_t);
+char* getCommand(char*);
 
 int main (int argc, char *argv[])
 {
@@ -60,10 +61,12 @@ void startShell()
 	size_t len = 0;				// length of line to be read cap
 	ssize_t lineLen;			// length of line that was read
 	char *line_wsPre_rm;		// line without the whitespace in beginning
+	char *command;				// The command(w/o any args if any are provided)
 
 	while (1)
 	{
-		printf("> ");
+		printf("> ");			// prompting
+
 		// getline takes line, len and fs as parameters
 		// line and len are dynamically allocated if there is no space avail
 		// or if line is NULL and len is 0
@@ -75,9 +78,15 @@ void startShell()
 		}
 		
 		// Handle whitespace before going through 
-		line_wsPre-rm = removePreWhiteSpace(line, lineLen);
+		line_wsPre_rm = removePreWhiteSpace(line, lineLen);
+		command = getCommand(line_wsPre_rm);
+
+		printf("command is:%s\n", command);
 
 		// TODO: maybe free (line) here?
+
+
+
 
 	}
 }
@@ -92,7 +101,8 @@ char* removePreWhiteSpace(char *line, ssize_t lineLength)
 	// Look for the first instance of char that isn't whitespace
 	for (int i = 0; i < lineLength; i++)
 	{
-		if (line[i] != ' ')
+		// TODO: maybe account for \t or other whitespace chars?
+		if (line[i] != ' ') 
 		{
 			wsCount = i;
 			break;
@@ -106,7 +116,7 @@ char* removePreWhiteSpace(char *line, ssize_t lineLength)
 	// malloc new space
 	if (!(ret_line = malloc(sizeof(char) * newLineLen)))
 	{
-		fprintf(stderr,"Insufficient memory");
+		fprintf(stderr,"insufficient memory");
 		exit(EXIT_FAILURE);
 	}
 	
@@ -118,4 +128,38 @@ char* removePreWhiteSpace(char *line, ssize_t lineLength)
 	}
 
 	return ret_line; 
+}
+
+// getCommand gets the command given a line
+// More generally, it gets the word before it hits a whitespace
+char* getCommand(char *line)
+{
+	char* ret = NULL;
+	size_t retLen = 0; 
+	size_t i = 0;
+
+	// Look for first whitespace
+	while(line[i] != ' ' && line[i] != '\t')
+	{
+		retLen++;
+		i++;
+	}
+
+	// malloc new space for ret.
+	// catch error if there is
+	if (!(ret = malloc(sizeof(char) * retLen)))
+	{
+		fprintf(stderr,"insufficient memory");
+		exit(EXIT_FAILURE);
+	}
+
+	// Copy over the command to ret_line
+	i = 0;
+	for (int j = 0; j < retLen; j++)
+	{
+		ret[j] = line[i];
+		i++;
+	}
+
+	return ret;
 }
