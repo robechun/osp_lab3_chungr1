@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include <string.h>
 
 // Function protoptypes
 void handleHelp(int, char *argv[]);
@@ -8,6 +9,7 @@ void startShell();
 void helpMessage();
 char* removePreWhiteSpace(char*, ssize_t);
 char* getCommand(char*);
+void getPwd();
 
 int main (int argc, char *argv[])
 {
@@ -77,14 +79,31 @@ void startShell()
 			fprintf(stderr, "Unable to read from stdin.\n");
 		}
 		
+		// TODO: segmentation fault in either remove or getCommand
 		// Handle whitespace before going through 
 		line_wsPre_rm = removePreWhiteSpace(line, lineLen);
 		command = getCommand(line_wsPre_rm);
-
-		printf("command is:%s\n", command);
-
+		printf("command is:%d%ssyo\n",10, command);
 		// TODO: maybe free (line) here?
 
+		if (!strcmp(command, "exit"))
+		{
+			exit(0);
+		}
+		else if (!strcmp(command, "help"))
+		{
+			helpMessage();
+		}
+		else if (!strcmp(command, "pwd"))
+		{
+			getPwd();
+		}
+		else if (!strcmp(command, "cd"))
+		{
+			//TODO
+			printf("STILL TO BE IMPLEMENTED\n");
+		}
+			
 
 
 
@@ -139,11 +158,12 @@ char* getCommand(char *line)
 	size_t i = 0;
 
 	// Look for first whitespace
-	while(line[i] != ' ' && line[i] != '\t')
+	while(line[i] != ' ' && line[i] != '\t' && line[i] != '\n')
 	{
 		retLen++;
 		i++;
 	}
+
 
 	// malloc new space for ret.
 	// catch error if there is
@@ -163,3 +183,17 @@ char* getCommand(char *line)
 
 	return ret;
 }
+
+void getPwd()
+{
+	char cwd[256];
+
+	if (getcwd(cwd, sizeof(cwd)) == NULL)
+	{
+		fprintf(stderr, "getcwd failure!\n");
+	}
+	else
+	{
+		printf("%s",cwd);
+	}
+}	
