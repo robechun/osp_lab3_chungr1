@@ -5,7 +5,8 @@
 // Function protoptypes
 void handleHelp(int, char *argv[]);
 void startShell();
-
+void helpMessage();
+char *removePreWhiteSpace(char*, ssize_t);
 
 int main (int argc, char *argv[])
 {
@@ -35,7 +36,7 @@ void handleHelp(int argc, char *argv[])
 		{
 			// Help message if correctly invoked
 			case 'h':
-				printf("THIS IS A HELP MESSAGE\n");
+				helpMessage();
 				exit(0);
 				break;
 			// Any illegal actions causes error message and exit
@@ -46,10 +47,75 @@ void handleHelp(int argc, char *argv[])
 
 }
 
+void helpMessage()
+{
+	// TODO: implement the help message
+	printf("THIS IS A HELP MESSAGE\n");
+}
+
 void startShell()
 {
+	FILE *fs = stdin;			// default filestream is stdin
+	char *line = NULL;			// line to be read from stdin
+	size_t len = 0;				// length of line to be read cap
+	ssize_t lineLen;			// length of line that was read
+	char *line_wsPre_rm;		// line without the whitespace in beginning
+
 	while (1)
 	{
+		printf("> ");
+		// getline takes line, len and fs as parameters
+		// line and len are dynamically allocated if there is no space avail
+		// or if line is NULL and len is 0
+		// fs is pointed at stdin, so we will get a line from stdin
+		// -1 returned if theres an error, so we print out error
+		if ((lineLen = getline(&line, &len, fs)) == -1)
+		{
+			fprintf(stderr, "Unable to read from stdin.\n");
+		}
+		
+		// Handle whitespace before going through 
+		line_wsPre-rm = removePreWhiteSpace(line, lineLen);
+
+		// TODO: maybe free (line) here?
 
 	}
+}
+
+char* removePreWhiteSpace(char *line, ssize_t lineLength)
+{
+	int wsCount = 0;			// to look for first instance of character
+	char *ret_line = NULL;		// line to return with no pre-whitespace
+	int newLineLen = 0;			// just to keep track of ret_line's new length
+
+
+	// Look for the first instance of char that isn't whitespace
+	for (int i = 0; i < lineLength; i++)
+	{
+		if (line[i] != ' ')
+		{
+			wsCount = i;
+			break;
+		}
+	}	
+	
+	// newLineLen is the new line's length, used for malloc and moving chars
+	// over to the ret_line
+	newLineLen = lineLength-wsCount;
+
+	// malloc new space
+	if (!(ret_line = malloc(sizeof(char) * newLineLen)))
+	{
+		fprintf(stderr,"Insufficient memory");
+		exit(EXIT_FAILURE);
+	}
+	
+	// Copy over line's content (so that no whitespace in beginning)
+	for (int j = 0; j < newLineLen; j++)
+	{
+		ret_line[j] = line[wsCount];
+		wsCount++;
+	}
+
+	return ret_line; 
 }
