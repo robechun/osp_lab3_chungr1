@@ -10,6 +10,8 @@ void helpMessage();
 char* removePreWhiteSpace(char*, ssize_t);
 char* getCommand(char*);
 void getPwd();
+void handleCd(char *);
+char* getArguments(char*);
 
 int main (int argc, char *argv[])
 {
@@ -50,12 +52,16 @@ void handleHelp(int argc, char *argv[])
 
 }
 
+// helpMessage() prints out the help message
 void helpMessage()
 {
 	// TODO: implement the help message
 	printf("THIS IS A HELP MESSAGE\n");
 }
 
+
+// startShell() starts the shell-- processes the commands sent by stdin
+// Infinite loop until user exits out using "exit" or ctrl-c.
 void startShell()
 {
 	FILE *fs = stdin;			// default filestream is stdin
@@ -98,10 +104,17 @@ void startShell()
 		}
 		else if (!strcmp(command, "cd"))
 		{
-			//TODO
-			printf("STILL TO BE IMPLEMENTED\n");
+			handleCd(getArguments(line_wsPre_rm));
 		}
-			
+		else if (!strcmp(command, "setpath"))
+		{
+			//TODO
+			printf("STILL TO BE IMPLEMENTD\n");
+		}
+		else
+		{
+			// TODO other commands -- or if not avail, error message
+		}
 
 
 
@@ -109,9 +122,12 @@ void startShell()
 	}
 }
 
+// removePreWhiteSpace removes all whitespace that might be present
+//  in the beginning of the line.
+// Returns the new line without the whitespace
 char* removePreWhiteSpace(char *line, ssize_t lineLength)
 {
-	int wsCount = 0;			// to look for first instance of character
+	int wsCount = -1;			// to look for first instance of character
 	char *ret_line = NULL;		// line to return with no pre-whitespace
 	int newLineLen = 0;			// just to keep track of ret_line's new length
 
@@ -120,13 +136,19 @@ char* removePreWhiteSpace(char *line, ssize_t lineLength)
 	for (int i = 0; i < lineLength; i++)
 	{
 		// TODO: maybe account for \t or other whitespace chars?
-		if (line[i] != ' ') 
+		if (line[i] != ' ' && line[i] != '\t' && line[i] != '\n') 
 		{
 			wsCount = i;
 			break;
 		}
 	}	
 	
+	// if it only has whitespace, then need to account for it
+	if (wsCount == -1)
+	{
+		wsCount = lineLength;
+	}
+
 	// newLineLen is the new line's length, used for malloc and moving chars
 	// over to the ret_line
 	newLineLen = lineLength-wsCount;
@@ -183,16 +205,72 @@ char* getCommand(char *line)
 	return ret;
 }
 
+// getPwd prints out the working directory
 void getPwd()
 {
-	char cwd[256];
+	// cwd is where the pwd will be stored.
+	char cwd[256];			
 
+	// getcwd(arg1, arg2)
+	// arg1 is where the results of the call will be stored
+	// arg2 is to specify how much space is available in the cwd
+	// returns null if there has been an error
 	if (getcwd(cwd, sizeof(cwd)) == NULL)
 	{
 		fprintf(stderr, "getcwd failure!\n");
 	}
 	else
 	{
-		printf("%s\n",cwd);
+		printf("%s\n",cwd);		// if successful, cwd should have working dir
 	}
 }	
+
+// getArguments gets a line and grabs the argument(s) for the line
+// removes leading whitespace
+char* getArguments(char* line)
+{
+	char *ws_removed;
+	int offset = 0;
+
+	// go through to find first instance of a whitespace
+	// This will tell you when the arguments start
+	for (int i = 0; i < strlen(line); i++)
+	{
+		if (line[i] == ' ' || line[i] == '\t' || line[i] == '\n')
+		{
+			offset = i;
+			break;
+		}
+	}
+
+	// using the line, get a ws_removed line which has no leading whitespace
+	// ws_removed will have the argument(s) without leading whitespace.
+	ws_removed = removePreWhiteSpace(line+offset,strlen(line)-offset-1);
+
+	return ws_removed;
+}
+
+
+// handleCd looks at the argument passed in and attempts to change directory
+// if argument is empty, change directory to HOME env variable
+void handleCd(char *arguments)
+{
+	char *homePath;
+
+	// If the argument is empty, go to HOME dir
+	if (strlen(arguments) == 0)
+	{
+		if (!(homePath = getenv("HOME")))
+			fprintf(stderr, "Couldn't get HOME env variable\n");
+		else
+			chdir(homePath);		// chdir changes directory to path specified
+	}
+	else 
+	{
+		// chdir changes dir to path specified
+		// retuns non-0 if unsuccessful.
+		if (chdir(arguments) != 0)
+			fprintf(stderr, "cd: no such file or directory: %s\n", arguments);
+	}
+		
+}
