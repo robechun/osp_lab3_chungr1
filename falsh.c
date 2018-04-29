@@ -18,9 +18,6 @@ int main (int argc, char *argv[])
 
 	handleHelp(argc, argv);
 	startShell();
-
-
-
 	
 	return 0;
 }
@@ -56,7 +53,14 @@ void handleHelp(int argc, char *argv[])
 void helpMessage()
 {
 	// TODO: implement the help message
-	printf("THIS IS A HELP MESSAGE\n");
+	printf("\"exit\" -- exits the shell\n\n\
+\"pwd\" -- prints current working directory.\n\n\
+\"cd [arg]\" -- changes directory to specified directory given\
+in [arg]. If none specified, goes to $HOME dir\n\n\
+\"setpath <dir> [dir] [dir] ... [dir]\" -- sets the path. User\
+must provide at least one directory. Can set as manay\
+as one wishes. Overwrites the path with given arguments\n\n\
+\"help\" -- lists all the built in command with descriptions\n\n");
 }
 
 
@@ -263,7 +267,7 @@ void handleCd(char *arguments)
 		if (!(homePath = getenv("HOME")))
 			fprintf(stderr, "Couldn't get HOME env variable\n");
 		else
-			chdir(homePath);		// chdir changes directory to path specified
+			chdir(homePath);	// chdir changes directory to path specified
 	}
 	else 
 	{
