@@ -10,12 +10,12 @@ void helpMessage();
 char* removePreWhiteSpace(char*, ssize_t);
 char* getCommand(char*);
 void getPwd();
-void handleCd(char *);
+void handleCd(char*);
 char* getArguments(char*);
+void handleSetpath(char*);
 
 int main (int argc, char *argv[])
 {
-
 	handleHelp(argc, argv);
 	startShell();
 	
@@ -112,8 +112,7 @@ void startShell()
 		}
 		else if (!strcmp(command, "setpath"))
 		{
-			//TODO
-			printf("STILL TO BE IMPLEMENTD\n");
+			handleSetpath(getArguments(line_wsPre_rm));
 		}
 		else
 		{
@@ -278,3 +277,54 @@ void handleCd(char *arguments)
 	}
 		
 }
+
+
+// handleSetpath sets the $PATH env variable to the argument passed in
+//  whitespace indicates another path
+void handleSetpath(char *arguments)
+{
+	char *envVar = "PATH";				// env variable to set ($PATH)
+	char allPaths[256] = {'\0'};		// the buffer to store all the paths
+										// need \0 for strncat to work properly
+	int prev = 0;						// keeps track of where to do strncat
+
+	
+	// Goes through the whole argument and parses out which parts to include
+	//  for the path
+	for (int i = 0; i < strlen(arguments); i++)
+	{
+		if (arguments[i] == ' ' || arguments[i] == '\t' || arguments[i] == '\n')
+		{
+			// add to allPaths one of the paths we found in the argument list
+			strncat(allPaths, (arguments+prev),i-prev);
+			strcat(allPaths, ":");
+
+			// skip all other whitespace
+			while (arguments[i] == ' ' || arguments[i] == '\t'
+									   || arguments[i] == '\n')
+			{
+				i++;
+			}
+
+			// prev spot where concatenation will start from
+			prev = i;
+
+			i--;			// accounting for end-of-string error
+		}
+	}
+
+	// Final push into allPaths.
+	// This will work if theres only one path listed as well
+	strcat(allPaths, arguments+prev);
+
+	// setenv takes in 3 parameters
+	// 1st param: the environment variable to set--PATH for us
+	// 2nd param: the string that indicates what to set it as
+	// 3rd param: non-zero indicates overload (which we want)
+	if (setenv(envVar, allPaths, 1) == -1)
+		fprintf(stderr, "error setting path");
+	
+	printf("$PATH=%s\n", getenv(envVar));
+}
+	
+
