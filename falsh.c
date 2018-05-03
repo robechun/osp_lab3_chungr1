@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <string.h>
+#include <sys/wait.h>
 
 // Function protoptypes
 void handleHelp(int, char *argv[]);
@@ -13,6 +14,7 @@ void getPwd();
 void handleCd(char*);
 char* getArguments(char*);
 void handleSetpath(char*);
+void handleOtherCommands(char*, char*);
 
 int main (int argc, char *argv[])
 {
@@ -116,11 +118,16 @@ void startShell()
 		}
 		else
 		{
-			// TODO other commands -- or if not avail, error message
+			char *arg = getArguments(line_wsPre_rm);
+			handleOtherCommands(command, arg);
+
+			if (strlen(arg) > 0)
+			{
+				if (arg[0] == '>')
+					printf("TODO!");//redirect(arg);
+			}
+			
 		}
-
-
-
 
 	}
 }
@@ -327,4 +334,43 @@ void handleSetpath(char *arguments)
 	printf("$PATH=%s\n", getenv(envVar));
 }
 	
+// handleOtherCommands takes in a command and arguments
+// look into $PATH and execute command specified if you can.
+void handleOtherCommands(char *command, char* args)
+{
+	char *token = args;					// token to be used for strtok
+	char *argv[256] = { command, 0 };	// argv to be passed in for execvp
+										// notice command already set to index 0
 
+	int rc = fork();		// make a child process
+
+	// Parse args passed in so that things like
+	//  ls -al works
+	// This sets up argv so that we can easily pass it in later to execvp
+	int i = 1;
+	while ((token = strtok(token, " ")) != NULL)
+	{
+		argv[i] = token;
+		token = NULL;
+	}
+	
+	if (rc < 0)
+	{
+		fprintf(stderr, "fork failed\n");
+		exit(1);
+	}
+	else if (rc == 0)		// child process
+	{
+		// execvp takes in 2 arguments
+		// looks in $PATH for commands
+		// argv[0] is the command to execute
+		// argv is the rest of the arguments (for when there's args to a
+		// command)
+		execvp(argv[0], argv);
+	}
+	else
+	{
+		wait(NULL);		// NULL says to wait for any child process to finish
+	}
+		
+}
