@@ -4,6 +4,7 @@
 #include <string.h>
 #include <sys/wait.h>
 #include <fcntl.h>
+#include <stdbool.h>
 
 // Function protoptypes
 void handleHelp(int, char *argv[]);
@@ -16,7 +17,7 @@ void handleCd(char*);
 char* getArguments(char*);
 void handleSetpath(char*);
 void handleOtherCommands(char*, char*);
-void handleRedirect(char*);
+void handleRedirect(char*, int*, int*);
 
 int main (int argc, char *argv[])
 {
@@ -79,6 +80,11 @@ void startShell()
 	char *line_wsPre_rm;		// line without the whitespace in beginning
 	char *command;				// The command(w/o any args if any are provided)
 	char *arguments;			// arguments specified
+	bool redirected = false;	// flag to indicate redirect happened
+	int output;					// file desc for output
+	int err;					// file desc for err
+	int STDOUT_CP = dup(STDOUT_FILENO);
+	int STDERR_CP = dup(STDERR_FILENO);
 
 	while (1)
 	{
@@ -105,7 +111,8 @@ void startShell()
 		{
 			if (arguments[0] == '>')
 			{
-				handleRedirect(arguments);
+				handleRedirect(arguments,&output,&err);
+				redirected = true;
 			}
 		}
 
@@ -134,6 +141,16 @@ void startShell()
 		{
 			handleOtherCommands(command, arguments);
 		}
+
+		if (redirected)
+		{
+			close(output);						// close the redirect file
+			close(err);							// close the redirect file
+			dup2(STDOUT_CP, STDOUT_FILENO);		// restore STDOUT
+			dup2(STDERR_CP, STDERR_FILENO);		// restore STDERR
+			redirected = false;
+		}
+
 
 	}
 }
@@ -190,6 +207,8 @@ char* removePreWhiteSpace(char *line, ssize_t lineLength)
 // More generally, it gets the word before it hits a whitespace
 char* getCommand(char *line)
 {
+	if (strlen(line) == 0)
+		return "";
 	char* ret = NULL;
 	size_t retLen = 0; 
 	size_t i = 0;
@@ -381,19 +400,32 @@ void handleOtherCommands(char *command, char* args)
 		
 }
 
-// TODO!!
-void handleRedirect(char* args)
+// handleRedirect will redirect stdout and stderr to files with .out and .err
+// Returns output and err through pass-by-reference
+void handleRedirect(char* args, int *output, int *err)
 {
-	printf("right here\n");
-	char path[256] = { '.', '/', '\0'};
+	char outpath[256] = { '.', '/', '\0' };			// The output path
+	char errpath[256] = { '.', '/', '\0' };			// The error path
+	// whitespace removal
+	char *argCpyRmWS = removePreWhiteSpace((args+1), strlen(args)-1); 
 
-	strcat(path, (args+1));
+	strcat(outpath, argCpyRmWS);
+	strcat(errpath, argCpyRmWS);
 
-	printf("2!!\n");
-	int output =  open(strcat(path, ".out"), O_CREAT|O_WRONLY|O_TRUNC, S_IRWXU);
-	dup2(output, STDOUT_FILENO);
+	// open takes in a path to open, and the flags passed in indicate
+	// create if not found, write only, truncate, and owner permission
+	// returns the file number of the successful open
+	(*output) =  open(strcat(outpath, ".out"), 
+						O_CREAT|O_WRONLY|O_TRUNC, S_IRWXU);
 
-	int err = open(strcat(path, ".err"), O_CREAT|O_WRONLY|O_TRUNC, S_IRWXU);
-	dup2(err, STDERR_FILENO);
+	// Redirect stuff to file instead of STDOUT
+	dup2((*output), STDOUT_FILENO);
+
+	(*err) = open(strcat(errpath, ".err"), O_CREAT|O_WRONLY|O_TRUNC, S_IRWXU);
+
+	// Redirect stuff to file instead of STDERR
+	dup2((*err), STDERR_FILENO);
+
+	free(argCpyRmWS);
 
 }
