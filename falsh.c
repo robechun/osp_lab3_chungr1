@@ -3,6 +3,7 @@
 #include <unistd.h>
 #include <string.h>
 #include <sys/wait.h>
+#include <fcntl.h>
 
 // Function protoptypes
 void handleHelp(int, char *argv[]);
@@ -15,6 +16,7 @@ void handleCd(char*);
 char* getArguments(char*);
 void handleSetpath(char*);
 void handleOtherCommands(char*, char*);
+void handleRedirect(char*);
 
 int main (int argc, char *argv[])
 {
@@ -76,6 +78,7 @@ void startShell()
 	ssize_t lineLen;			// length of line that was read
 	char *line_wsPre_rm;		// line without the whitespace in beginning
 	char *command;				// The command(w/o any args if any are provided)
+	char *arguments;			// arguments specified
 
 	while (1)
 	{
@@ -94,7 +97,18 @@ void startShell()
 		// Handle whitespace before going through 
 		line_wsPre_rm = removePreWhiteSpace(line, lineLen);
 		command = getCommand(line_wsPre_rm);
+		arguments = getArguments(line_wsPre_rm);
+		
 		// TODO: maybe free (line) here?
+		
+		if (strlen(arguments) > 0)
+		{
+			if (arguments[0] == '>')
+			{
+				handleRedirect(arguments);
+			}
+		}
+
 
 		if (!strcmp(command, "exit"))
 		{
@@ -110,23 +124,15 @@ void startShell()
 		}
 		else if (!strcmp(command, "cd"))
 		{
-			handleCd(getArguments(line_wsPre_rm));
+			handleCd(arguments);
 		}
 		else if (!strcmp(command, "setpath"))
 		{
-			handleSetpath(getArguments(line_wsPre_rm));
+			handleSetpath(arguments);
 		}
 		else
 		{
-			char *arg = getArguments(line_wsPre_rm);
-			handleOtherCommands(command, arg);
-
-			if (strlen(arg) > 0)
-			{
-				if (arg[0] == '>')
-					printf("TODO!");//redirect(arg);
-			}
-			
+			handleOtherCommands(command, arguments);
 		}
 
 	}
@@ -373,4 +379,21 @@ void handleOtherCommands(char *command, char* args)
 		wait(NULL);		// NULL says to wait for any child process to finish
 	}
 		
+}
+
+// TODO!!
+void handleRedirect(char* args)
+{
+	printf("right here\n");
+	char path[256] = { '.', '/', '\0'};
+
+	strcat(path, (args+1));
+
+	printf("2!!\n");
+	int output =  open(strcat(path, ".out"), O_CREAT|O_WRONLY|O_TRUNC, S_IRWXU);
+	dup2(output, STDOUT_FILENO);
+
+	int err = open(strcat(path, ".err"), O_CREAT|O_WRONLY|O_TRUNC, S_IRWXU);
+	dup2(err, STDERR_FILENO);
+
 }
