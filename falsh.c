@@ -81,6 +81,7 @@ void startShell()
 	char *command;				// The command(w/o any args if any are provided)
 	char *arguments;			// arguments specified
 	bool redirected = false;	// flag to indicate redirect happened
+	char *redir;				// for finding '>' character
 	int output;					// file desc for output
 	int err;					// file desc for err
 	int STDOUT_CP = dup(STDOUT_FILENO);
@@ -107,15 +108,20 @@ void startShell()
 		
 		// TODO: maybe free (line) here?
 		
-		if (strlen(arguments) > 0)
+		if ((redir = strchr(arguments, '>')) != NULL)
 		{
-			if (arguments[0] == '>')
-			{
-				handleRedirect(arguments,&output,&err);
-				redirected = true;
-			}
+			handleRedirect(arguments,&output,&err);
+			redirected = true;
+			
+			char *tmp = removePreWhiteSpace((arguments+1), 
+			strlen(arguments)-1);
+			free(arguments);
+			arguments = tmp;
+			tmp = NULL;
+			printf("argsNow:%s\n", arguments);
 		}
 
+		printf("argsNow2:%s\n", arguments);
 
 		if (!strcmp(command, "exit"))
 		{
@@ -151,6 +157,9 @@ void startShell()
 			redirected = false;
 		}
 
+		//free(line_wsPre_rm);
+		//free(command);
+		free(arguments);
 
 	}
 }
