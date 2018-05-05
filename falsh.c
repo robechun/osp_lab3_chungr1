@@ -10,7 +10,7 @@
 void handleHelp(int, char *argv[]);
 void startShell();
 void helpMessage();
-char* removePreWhiteSpace(char*, ssize_t);
+char* removePreWhiteSpace(char*);
 char* getCommand(char*);
 void getPwd();
 void handleCd(char*);
@@ -101,26 +101,47 @@ void startShell()
 			fprintf(stderr, "Unable to read from stdin.\n");
 		}
 		
+		printf("DEBUG: line after getline:%s.\n", line);
 		// Handle whitespace before going through 
-		line_wsPre_rm = removePreWhiteSpace(line, lineLen);
+		line_wsPre_rm = removePreWhiteSpace(line);
+		printf("DEBUG: line_wsPre_rm after removeWS:%s.\n", line_wsPre_rm);
 		command = getCommand(line_wsPre_rm);
 		arguments = getArguments(line_wsPre_rm);
 		
-		// TODO: maybe free (line) here?
 		
-		if ((redir = strchr(arguments, '>')) != NULL)
+		// Look for '>' If found, we know it should try to do redirect.
+		if ((redir = strchr(line_wsPre_rm, '>')) != NULL)
 		{
+			printf("DEBUG: Hello here!\n");
+			// Redirection 
 			handleRedirect(arguments,&output,&err);
 			redirected = true;
 			
-			char *tmp = removePreWhiteSpace((arguments+1), 
-			strlen(arguments)-1);
+			printf("DEBUG: Here then?\n");
+
+			// re-parse command and arguments
+			char *tmp;
+			printf("DEBUG: strlne(line_wsPre_rm)=%d\n", strlen(line_wsPre_rm));
+			malloc(sizeof(char) * strlen(line_wsPre_rm));
+			strncpy(tmp, line_wsPre_rm, redir-line_wsPre_rm);
+			strcat(tmp, "\0");
+
+			free(line_wsPre_rm);
+			line_wsPre_rm = tmp;
+			printf("line is now:%s.\n", line_wsPre_rm);
+
+			free(command);
+			command = NULL;
+			command = getCommand(line_wsPre_rm);
+
 			free(arguments);
-			arguments = tmp;
-			tmp = NULL;
-			printf("argsNow:%s\n", arguments);
+			arguments = NULL;
+			arguments = getArguments(line_wsPre_rm);
+
 		}
 
+
+		printf("command is:%s\n", command);
 		printf("argsNow2:%s\n", arguments);
 
 		if (!strcmp(command, "exit"))
@@ -157,9 +178,15 @@ void startShell()
 			redirected = false;
 		}
 
-		//free(line_wsPre_rm);
-		//free(command);
+		free(line_wsPre_rm);
+		line_wsPre_rm = NULL;
+
+		free(command);
+		command = NULL;
+		
 		free(arguments);
+		arguments = NULL;
+
 
 	}
 }
@@ -167,18 +194,18 @@ void startShell()
 // removePreWhiteSpace removes all whitespace that might be present
 //  in the beginning of the line.
 // Returns the new line without the whitespace
-char* removePreWhiteSpace(char *line, ssize_t lineLength)
+char* removePreWhiteSpace(char *line)
 {
 	int wsCount = -1;			// to look for first instance of character
 	char *ret_line = NULL;		// line to return with no pre-whitespace
 	int newLineLen = 0;			// just to keep track of ret_line's new length
-
+	int lineLength = strlen(line);
 
 	// Look for the first instance of char that isn't whitespace
 	for (int i = 0; i < lineLength; i++)
 	{
 		// TODO: maybe account for \t or other whitespace chars?
-		if (line[i] != ' ' && line[i] != '\t' && line[i] != '\n') 
+		if (line[i] != ' ' && line[i] != '\t' && line[i]!='\n' && line[i]!='\0')
 		{
 			wsCount = i;
 			break;
@@ -191,6 +218,8 @@ char* removePreWhiteSpace(char *line, ssize_t lineLength)
 		wsCount = lineLength;
 	}
 
+	printf("DEBUG: removewhitespace--lineLength:%d, wsCount:%d\n", lineLength,
+	wsCount);
 	// newLineLen is the new line's length, used for malloc and moving chars
 	// over to the ret_line
 	newLineLen = lineLength-wsCount;
@@ -222,13 +251,15 @@ char* getCommand(char *line)
 	size_t retLen = 0; 
 	size_t i = 0;
 
+	printf("DEBUG: getCommand--line passed in:%s.\n", line);
 	// Look for first whitespace
-	while(line[i] != ' ' && line[i] != '\t' && line[i] != '\n')
+	while(line[i] != ' ' && line[i] != '\t'&& line[i] != '\n' && line[i]!= '\0')
 	{
 		retLen++;
 		i++;
 	}
 
+	printf("DEBUG: getCommand--retLen:%d\n", retLen);
 
 	// malloc new space for ret.
 	// catch error if there is
@@ -245,6 +276,8 @@ char* getCommand(char *line)
 		ret[j] = line[i];
 		i++;
 	}
+	printf("DEBUG: getCommand--before ret: retlen:%d\n", strlen(ret));
+	printf("DEBUG: getCommand-- ret:%s.\n", ret);
 
 	return ret;
 }
@@ -276,6 +309,7 @@ char* getArguments(char* line)
 	char *ws_removed;
 	int offset = 0;
 
+	printf("DEBUG: getArgs()--line passed in:%s.\n",line);
 	// go through to find first instance of a whitespace
 	// This will tell you when the arguments start
 	for (int i = 0; i < strlen(line); i++)
@@ -289,7 +323,7 @@ char* getArguments(char* line)
 
 	// using the line, get a ws_removed line which has no leading whitespace
 	// ws_removed will have the argument(s) without leading whitespace.
-	ws_removed = removePreWhiteSpace(line+offset,strlen(line)-offset-1);
+	ws_removed = removePreWhiteSpace(line+offset);
 
 	return ws_removed;
 }
@@ -405,6 +439,7 @@ void handleOtherCommands(char *command, char* args)
 	else
 	{
 		wait(NULL);		// NULL says to wait for any child process to finish
+		printf("DEBUG: Done with parent\n");
 	}
 		
 }
@@ -416,7 +451,7 @@ void handleRedirect(char* args, int *output, int *err)
 	char outpath[256] = { '.', '/', '\0' };			// The output path
 	char errpath[256] = { '.', '/', '\0' };			// The error path
 	// whitespace removal
-	char *argCpyRmWS = removePreWhiteSpace((args+1), strlen(args)-1); 
+	char *argCpyRmWS = removePreWhiteSpace((args+1));
 
 	strcat(outpath, argCpyRmWS);
 	strcat(errpath, argCpyRmWS);
@@ -436,5 +471,6 @@ void handleRedirect(char* args, int *output, int *err)
 	dup2((*err), STDERR_FILENO);
 
 	free(argCpyRmWS);
+	argCpyRmWS = NULL;
 
 }
