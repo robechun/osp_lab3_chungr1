@@ -491,6 +491,20 @@ void handleRedirect(char* args, int *output, int *err)
 	// grab the file name without leading whitespace
 	char *argCpyRmWS = removePreWhiteSpace(args);
 
+	// Check to see if missing file name
+	if (strlen(argCpyRmWS) == 0)
+	{
+		fprintf(stderr, "File name missing!\n");
+		return;
+	}
+
+	// Check to see if there are multiple arguments
+	if (strchr(argCpyRmWS, ' ') != NULL || strchr(argCpyRmWS, '\t') != NULL)
+	{
+		fprintf(stderr, "Multiple arguments not allowed!\n");
+		return;
+	}
+
 	// Configure output and error path strings
 	strcat(outpath, argCpyRmWS);
 	strcat(errpath, argCpyRmWS);
