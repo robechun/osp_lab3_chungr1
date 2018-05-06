@@ -467,18 +467,15 @@ void handleRedirect(char* args, int *output, int *err)
 	strcat(outpath, argCpyRmWS);
 	strcat(errpath, argCpyRmWS);
 
-	printf("DEBUG: delete after\n");
 	// open takes in a path to open, and the flags passed in indicate
 	// create if not found, write only, truncate, and owner permission
 	// returns the file number of the successful open
 	(*output) =  open(strcat(outpath, ".out"), 
 						O_CREAT|O_WRONLY|O_TRUNC, S_IRWXU);
-	printf("DEBUG: delete3\n");
 
 	// Redirect stuff to file instead of STDOUT
 	dup2((*output), STDOUT_FILENO);
 
-	printf("DEBUG: delete2\n");
 	(*err) = open(strcat(errpath, ".err"), O_CREAT|O_WRONLY|O_TRUNC, S_IRWXU);
 
 	// Redirect stuff to file instead of STDERR
