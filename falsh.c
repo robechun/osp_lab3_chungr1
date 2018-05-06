@@ -120,14 +120,18 @@ void startShell()
 			
 			//printf("DEBUG: Redirect function success\n");
 
-			// re-parse command and arguments
+			// ***** re-parse command and arguments ***** //
+			// tmp will serve as the new line_wsPre_rm temporarily
 			char *tmp;
+
+			// allocate same size for tmp, but end it early with '\0'
 			tmp = malloc(sizeof(char) * strlen(line_wsPre_rm));
 			int newLength = redir-line_wsPre_rm;
 			strncpy(tmp, line_wsPre_rm, newLength);
 			tmp[newLength] = '\0';
 			//printf("DEBUG: redirect:tmp is:%s.\n", tmp);
 
+			// redirect line_wsPre_rm to point to tmp
 			free(line_wsPre_rm);
 			line_wsPre_rm = tmp;
 			printf("line is now:%s.\n", line_wsPre_rm);
@@ -140,6 +144,7 @@ void startShell()
 			arguments = NULL;
 			arguments = getArguments(line_wsPre_rm);
 
+			tmp = NULL;
 		}
 
 
@@ -334,6 +339,12 @@ char* getArguments(char* line)
 	// ws_removed will have the argument(s) without leading whitespace.
 	ws_removed = removePreWhiteSpace(line+offset);
 	//printf("DEBUG: getArgs()--return:%s.\n\n\n", ws_removed);
+	
+	// Remove \n char (at end of line)
+	char *tmp = NULL;
+	tmp = strchr(ws_removed, '\n');
+	if (tmp)
+		*tmp = '\0';
 
 	return ws_removed;
 }
