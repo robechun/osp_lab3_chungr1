@@ -101,11 +101,11 @@ void startShell()
 			fprintf(stderr, "Unable to read from stdin.\n");
 		}
 		
-		printf("---------- DEBUG START --------------\n");
-		printf("DEBUG: line after getline:%s.\n\n", line);
+		//printf("---------- DEBUG START --------------\n");
+		//printf("DEBUG: line after getline:%s.\n\n", line);
 		// Handle whitespace before going through 
 		line_wsPre_rm = removePreWhiteSpace(line);
-		printf("DEBUG: line_wsPre_rm after removeWS:%s.\n", line_wsPre_rm);
+		//printf("DEBUG: line_wsPre_rm after removeWS:%s.\n", line_wsPre_rm);
 		command = getCommand(line_wsPre_rm);
 		arguments = getArguments(line_wsPre_rm);
 		
@@ -113,19 +113,20 @@ void startShell()
 		// Look for '>' If found, we know it should try to do redirect.
 		if ((redir = strchr(line_wsPre_rm, '>')) != NULL)
 		{
-			printf("DEBUG: Found '>'\n");
+			//printf("DEBUG: Found '>'\n");
 			// Redirection 
 			handleRedirect(arguments,&output,&err);
 			redirected = true;
 			
-			printf("DEBUG: Redirect function success\n");
+			//printf("DEBUG: Redirect function success\n");
 
 			// re-parse command and arguments
 			char *tmp;
-			printf("DEBUG: strlne(line_wsPre_rm)=%d\n", strlen(line_wsPre_rm));
-			malloc(sizeof(char) * strlen(line_wsPre_rm));
-			strncpy(tmp, line_wsPre_rm, redir-line_wsPre_rm);
-			strcat(tmp, "\0");
+			tmp = malloc(sizeof(char) * strlen(line_wsPre_rm));
+			int newLength = redir-line_wsPre_rm;
+			strncpy(tmp, line_wsPre_rm, newLength);
+			tmp[newLength] = '\0';
+			//printf("DEBUG: redirect:tmp is:%s.\n", tmp);
 
 			free(line_wsPre_rm);
 			line_wsPre_rm = tmp;
@@ -218,8 +219,8 @@ char* removePreWhiteSpace(char *line)
 		wsCount = lineLength;
 	}
 
-	printf("DEBUG: removewhitespace--lineLength:%d, wsCount:%d\n", lineLength,
-	wsCount);
+	//printf("DEBUG: removewhitespace--lineLength:%d, wsCount:%d\n", lineLength,
+	//wsCount);
 	// newLineLen is the new line's length, used for malloc and moving chars
 	// over to the ret_line
 	newLineLen = lineLength-wsCount+1;
@@ -242,7 +243,7 @@ char* removePreWhiteSpace(char *line)
 		wsCount++;
 	}
 	ret_line[newLineLen-1] = '\0';
-	printf("DEBUG: removewhitespace--return:%s.\n\n\n", ret_line);
+	//printf("DEBUG: removewhitespace--return:%s.\n\n\n", ret_line);
 
 	return ret_line; 
 }
@@ -257,7 +258,7 @@ char* getCommand(char *line)
 	size_t retLen = 0; 
 	size_t i = 0;
 
-	printf("DEBUG: getCommand--line passed in:%s.\n", line);
+	//printf("DEBUG: getCommand--line passed in:%s.\n", line);
 	// Look for first whitespace
 	while(line[i] != ' ' && line[i] != '\t'&& line[i] != '\n' && line[i]!= '\0')
 	{
@@ -266,7 +267,7 @@ char* getCommand(char *line)
 	}
 	retLen++;
 
-	printf("DEBUG: getCommand--retLen:%d\n", retLen);
+	//printf("DEBUG: getCommand--retLen:%d\n", retLen);
 
 	// malloc new space for ret.
 	// catch error if there is
@@ -284,8 +285,8 @@ char* getCommand(char *line)
 		i++;
 	}
 	ret[retLen-1] = '\0';
-	printf("DEBUG: getCommand--before ret: retlen:%d\n", strlen(ret));
-	printf("DEBUG: getCommand-- ret:%s.\n\n\n", ret);
+	//printf("DEBUG: getCommand--before ret: retlen:%d\n", strlen(ret));
+	//printf("DEBUG: getCommand-- ret:%s.\n\n\n", ret);
 
 	return ret;
 }
@@ -317,7 +318,7 @@ char* getArguments(char* line)
 	char *ws_removed;
 	int offset = 0;
 
-	printf("DEBUG: getArgs()--line passed in:%s.\n",line);
+	//printf("DEBUG: getArgs()--line passed in:%s.\n",line);
 	// go through to find first instance of a whitespace
 	// This will tell you when the arguments start
 	for (int i = 0; i < strlen(line); i++)
@@ -332,7 +333,7 @@ char* getArguments(char* line)
 	// using the line, get a ws_removed line which has no leading whitespace
 	// ws_removed will have the argument(s) without leading whitespace.
 	ws_removed = removePreWhiteSpace(line+offset);
-	printf("DEBUG: getArgs()--return:%s.\n\n\n", ws_removed);
+	//printf("DEBUG: getArgs()--return:%s.\n\n\n", ws_removed);
 
 	return ws_removed;
 }
@@ -448,7 +449,7 @@ void handleOtherCommands(char *command, char* args)
 	else
 	{
 		wait(NULL);		// NULL says to wait for any child process to finish
-		printf("DEBUG: Done with parent\n");
+		//printf("DEBUG: Done with parent\n");
 	}
 		
 }
@@ -460,10 +461,19 @@ void handleRedirect(char* args, int *output, int *err)
 	char outpath[256] = { '.', '/', '\0' };			// The output path
 	char errpath[256] = { '.', '/', '\0' };			// The error path
 	// whitespace removal
-	printf("DEBUG: check:%d\n", (*output));
-	printf("DEBUG: redirect arg passed in:%s.\n", args);
-	char *argCpyRmWS = removePreWhiteSpace((args+1));
+	//printf("DEBUG: check:%d\n", (*output));
+	//printf("DEBUG: redirect arg passed in:%s.\n", args);
+	
+	// search for '\n'. If it exists, replace it with '\0'
+	// This makes sure the file name is not janky with newline character
+	char *tmp = strchr(args, '\n');
+	if (tmp)
+		*tmp = '\0';
 
+	// grab the file name without leading whitespace
+	char *argCpyRmWS = removePreWhiteSpace((args+2));
+
+	// Configure output and error path strings
 	strcat(outpath, argCpyRmWS);
 	strcat(errpath, argCpyRmWS);
 
@@ -483,5 +493,5 @@ void handleRedirect(char* args, int *output, int *err)
 
 	free(argCpyRmWS);
 	argCpyRmWS = NULL;
-
+	tmp = NULL;
 }
