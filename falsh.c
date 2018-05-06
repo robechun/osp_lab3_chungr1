@@ -5,6 +5,7 @@
 #include <sys/wait.h>
 #include <fcntl.h>
 #include <stdbool.h>
+#include <errno.h>
 
 // Function protoptypes
 void handleHelp(int, char *argv[]);
@@ -134,7 +135,6 @@ void startShell()
 			// redirect line_wsPre_rm to point to tmp
 			free(line_wsPre_rm);
 			line_wsPre_rm = tmp;
-			printf("line is now:%s.\n", line_wsPre_rm);
 
 			free(command);
 			command = NULL;
@@ -148,8 +148,8 @@ void startShell()
 		}
 
 
-		printf("command is:%s.\n", command);
-		printf("argsNow2:%s.\n", arguments);
+		//printf("command is:%s.\n", command);
+		//printf("argsNow2:%s.\n", arguments);
 
 		if (!strcmp(command, "exit"))
 		{
@@ -418,7 +418,7 @@ void handleSetpath(char *arguments)
 	// 2nd param: the string that indicates what to set it as
 	// 3rd param: non-zero indicates overload (which we want)
 	if (setenv(envVar, allPaths, 1) == -1)
-		fprintf(stderr, "error setting path");
+		perror("Error setting path");
 	
 	printf("$PATH=%s\n", getenv(envVar));
 }
@@ -441,7 +441,9 @@ void handleOtherCommands(char *command, char* args)
 	{
 		argv[i] = token;
 		token = NULL;
+		i++;
 	}
+
 	
 	if (rc < 0)
 	{
@@ -455,7 +457,12 @@ void handleOtherCommands(char *command, char* args)
 		// argv[0] is the command to execute
 		// argv is the rest of the arguments (for when there's args to a
 		// command)
-		execvp(argv[0], argv);
+		if (execvp(argv[0], argv) == -1)
+		{
+			perror("exec other command failed");
+			exit(1);
+		}
+
 	}
 	else
 	{
@@ -495,12 +502,14 @@ void handleRedirect(char* args, int *output, int *err)
 						O_CREAT|O_WRONLY|O_TRUNC, S_IRWXU);
 
 	// Redirect stuff to file instead of STDOUT
-	dup2((*output), STDOUT_FILENO);
+	if (dup2((*output), STDOUT_FILENO) == -1)
+		perror("dup2 failed");
 
 	(*err) = open(strcat(errpath, ".err"), O_CREAT|O_WRONLY|O_TRUNC, S_IRWXU);
 
 	// Redirect stuff to file instead of STDERR
-	dup2((*err), STDERR_FILENO);
+	if (dup2((*err), STDERR_FILENO) == -1)
+		perror("dup2 failed");
 
 	free(argCpyRmWS);
 	argCpyRmWS = NULL;
