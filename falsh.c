@@ -115,7 +115,7 @@ void startShell()
 		{
 			//printf("DEBUG: Found '>'\n");
 			// Redirection 
-			handleRedirect(arguments,&output,&err);
+			handleRedirect(redir+1,&output,&err);
 			redirected = true;
 			
 			//printf("DEBUG: Redirect function success\n");
@@ -482,7 +482,7 @@ void handleRedirect(char* args, int *output, int *err)
 		*tmp = '\0';
 
 	// grab the file name without leading whitespace
-	char *argCpyRmWS = removePreWhiteSpace((args+2));
+	char *argCpyRmWS = removePreWhiteSpace(args);
 
 	// Configure output and error path strings
 	strcat(outpath, argCpyRmWS);
