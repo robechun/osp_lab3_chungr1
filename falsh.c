@@ -82,8 +82,8 @@ void startShell()
 	char *arguments;			// arguments specified
 	bool redirected = false;	// flag to indicate redirect happened
 	char *redir;				// for finding '>' character
-	int output;					// file desc for output
-	int err;					// file desc for err
+	int output = 7000;			// file desc for output
+	int err = 7001;				// file desc for err
 	int STDOUT_CP = dup(STDOUT_FILENO);
 	int STDERR_CP = dup(STDERR_FILENO);
 
@@ -101,7 +101,8 @@ void startShell()
 			fprintf(stderr, "Unable to read from stdin.\n");
 		}
 		
-		printf("DEBUG: line after getline:%s.\n", line);
+		printf("---------- DEBUG START --------------\n");
+		printf("DEBUG: line after getline:%s.\n\n", line);
 		// Handle whitespace before going through 
 		line_wsPre_rm = removePreWhiteSpace(line);
 		printf("DEBUG: line_wsPre_rm after removeWS:%s.\n", line_wsPre_rm);
@@ -112,12 +113,12 @@ void startShell()
 		// Look for '>' If found, we know it should try to do redirect.
 		if ((redir = strchr(line_wsPre_rm, '>')) != NULL)
 		{
-			printf("DEBUG: Hello here!\n");
+			printf("DEBUG: Found '>'\n");
 			// Redirection 
 			handleRedirect(arguments,&output,&err);
 			redirected = true;
 			
-			printf("DEBUG: Here then?\n");
+			printf("DEBUG: Redirect function success\n");
 
 			// re-parse command and arguments
 			char *tmp;
@@ -141,8 +142,8 @@ void startShell()
 		}
 
 
-		printf("command is:%s\n", command);
-		printf("argsNow2:%s\n", arguments);
+		printf("command is:%s.\n", command);
+		printf("argsNow2:%s.\n", arguments);
 
 		if (!strcmp(command, "exit"))
 		{
@@ -237,6 +238,7 @@ char* removePreWhiteSpace(char *line)
 		ret_line[j] = line[wsCount];
 		wsCount++;
 	}
+	printf("DEBUG: removewhitespace--return:%s.\n\n\n", ret_line);
 
 	return ret_line; 
 }
@@ -277,7 +279,7 @@ char* getCommand(char *line)
 		i++;
 	}
 	printf("DEBUG: getCommand--before ret: retlen:%d\n", strlen(ret));
-	printf("DEBUG: getCommand-- ret:%s.\n", ret);
+	printf("DEBUG: getCommand-- ret:%s.\n\n\n", ret);
 
 	return ret;
 }
@@ -324,6 +326,7 @@ char* getArguments(char* line)
 	// using the line, get a ws_removed line which has no leading whitespace
 	// ws_removed will have the argument(s) without leading whitespace.
 	ws_removed = removePreWhiteSpace(line+offset);
+	printf("DEBUG: getArgs()--return:%s.\n\n\n", ws_removed);
 
 	return ws_removed;
 }
@@ -451,20 +454,25 @@ void handleRedirect(char* args, int *output, int *err)
 	char outpath[256] = { '.', '/', '\0' };			// The output path
 	char errpath[256] = { '.', '/', '\0' };			// The error path
 	// whitespace removal
+	printf("DEBUG: check:%d\n", (*output));
+	printf("DEBUG: redirect arg passed in:%s.\n", args);
 	char *argCpyRmWS = removePreWhiteSpace((args+1));
 
 	strcat(outpath, argCpyRmWS);
 	strcat(errpath, argCpyRmWS);
 
+	printf("DEBUG: delete after\n");
 	// open takes in a path to open, and the flags passed in indicate
 	// create if not found, write only, truncate, and owner permission
 	// returns the file number of the successful open
 	(*output) =  open(strcat(outpath, ".out"), 
 						O_CREAT|O_WRONLY|O_TRUNC, S_IRWXU);
+	printf("DEBUG: delete3\n");
 
 	// Redirect stuff to file instead of STDOUT
 	dup2((*output), STDOUT_FILENO);
 
+	printf("DEBUG: delete2\n");
 	(*err) = open(strcat(errpath, ".err"), O_CREAT|O_WRONLY|O_TRUNC, S_IRWXU);
 
 	// Redirect stuff to file instead of STDERR
