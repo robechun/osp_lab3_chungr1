@@ -77,9 +77,9 @@ void startShell()
 	char *line = NULL;			// line to be read from stdin
 	size_t len = 0;				// length of line to be read cap
 	ssize_t lineLen;			// length of line that was read
-	char *line_wsPre_rm;		// line without the whitespace in beginning
-	char *command;				// The command(w/o any args if any are provided)
-	char *arguments;			// arguments specified
+	char *line_wsPre_rm=NULL;	// line without the whitespace in beginning
+	char *command=NULL;			// The command(w/o any args if any are provided)
+	char *arguments=NULL;		// arguments specified
 	bool redirected = false;	// flag to indicate redirect happened
 	char *redir;				// for finding '>' character
 	int output = 7000;			// file desc for output
@@ -205,7 +205,6 @@ char* removePreWhiteSpace(char *line)
 	// Look for the first instance of char that isn't whitespace
 	for (int i = 0; i < lineLength; i++)
 	{
-		// TODO: maybe account for \t or other whitespace chars?
 		if (line[i] != ' ' && line[i] != '\t' && line[i]!='\n' && line[i]!='\0')
 		{
 			wsCount = i;
@@ -223,7 +222,11 @@ char* removePreWhiteSpace(char *line)
 	wsCount);
 	// newLineLen is the new line's length, used for malloc and moving chars
 	// over to the ret_line
-	newLineLen = lineLength-wsCount;
+	newLineLen = lineLength-wsCount+1;
+
+	// Don't malloc(0)!!
+	if (newLineLen == 0)
+		return NULL;
 
 	// malloc new space
 	if (!(ret_line = malloc(sizeof(char) * newLineLen)))
@@ -233,11 +236,12 @@ char* removePreWhiteSpace(char *line)
 	}
 	
 	// Copy over line's content (so that no whitespace in beginning)
-	for (int j = 0; j < newLineLen; j++)
+	for (int j = 0; j < newLineLen-1; j++)
 	{
 		ret_line[j] = line[wsCount];
 		wsCount++;
 	}
+	ret_line[newLineLen-1] = '\0';
 	printf("DEBUG: removewhitespace--return:%s.\n\n\n", ret_line);
 
 	return ret_line; 
@@ -260,6 +264,7 @@ char* getCommand(char *line)
 		retLen++;
 		i++;
 	}
+	retLen++;
 
 	printf("DEBUG: getCommand--retLen:%d\n", retLen);
 
@@ -273,11 +278,12 @@ char* getCommand(char *line)
 
 	// Copy over the command to ret_line
 	i = 0;
-	for (int j = 0; j < retLen; j++)
+	for (int j = 0; j < (retLen-1); j++)
 	{
 		ret[j] = line[i];
 		i++;
 	}
+	ret[retLen-1] = '\0';
 	printf("DEBUG: getCommand--before ret: retlen:%d\n", strlen(ret));
 	printf("DEBUG: getCommand-- ret:%s.\n\n\n", ret);
 
